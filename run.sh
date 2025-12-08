@@ -1,2 +1,2 @@
-g++ main.cpp src/gl.c -I include/ -lglfw -ldl -o my_renderer; ./render_buzz
+g++ main.cpp src/gl.c -I include/ -lglfw -ldl -o reder_buzz; ./render_buzz
 
