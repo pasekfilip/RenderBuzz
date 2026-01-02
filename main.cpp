@@ -14,12 +14,11 @@ void checkShaderCompileErrors(unsigned int shader, std::string type) {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if (!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            std::cout
-                << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n"
-                << infoLog
-                << "\n -- --------------------------------------------------- "
-                   "-- "
-                << std::endl;
+            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n"
+                      << infoLog
+                      << "\n -- --------------------------------------------------- "
+                         "-- "
+                      << std::endl;
         }
         return;
     }
@@ -27,12 +26,23 @@ void checkShaderCompileErrors(unsigned int shader, std::string type) {
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-        std::cout
-            << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n"
-            << infoLog
-            << "\n -- --------------------------------------------------- -- "
-            << std::endl;
+        std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n"
+                  << infoLog
+                  << "\n -- --------------------------------------------------- -- "
+                  << std::endl;
     }
+}
+
+void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                GLsizei length, const GLchar *message, const void *userParam) {
+    // Ignore non-significant error/warning codes
+    // if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
+    //     return;
+
+    std::cerr << "---------------" << std::endl;
+    std::cerr << "Debug message (" << id << "): " << message << std::endl;
+    // ... (print source, type, severity)
+    std::cerr << std::endl;
 }
 
 int main() {
@@ -50,15 +60,16 @@ int main() {
         out vec4 FragColor; 
         void main()
         {
-        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+        FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
         }
     )";
 
     if (!glfwInit())
         return -1;
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     // #ifdef __APPLE__
     // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Fix for Mac
@@ -75,6 +86,15 @@ int main() {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+    int flags;
+    glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(MessageCallback, nullptr);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+    }
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -98,56 +118,55 @@ int main() {
 
     // --- VERTEX DATA ---
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // Left
-        0.5f,  -0.5f, 0.0f, // Right
-        0.0f,  0.5f,  0.0f  // Top
+        -0.5f, -0.5f, 0.0f, // bottom left
+        0.5f, -0.5f, 0.0f,  // bottom right
+        0.5f, 0.5f, 0.0f,   // top right
+        -0.5f, 0.5f, 0.0f   // top left
     };
 
-    // 2. FIXED: Introduction of the VAO (Vertex Array Object)
-    // The VAO records the VBO bindings and attribute configurations.
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO); // <--- Generate VAO
+    unsigned int indices[] = {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    unsigned int VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO); // generate vao
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
-    // 1. Bind Vertex Array Object first
-    glBindVertexArray(VAO); // <--- Bind VAO
+    glBindVertexArray(VAO);
 
-    // 2. Copy our vertices array in a buffer for OpenGL to use
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // 3. Then set our vertex attributes pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                          (void *)0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
-    // Unbind VBO (Optional, but safe)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // Unbind VAO (Optional, prevents accidental modification)
     glBindVertexArray(0);
 
-    // --- RENDER LOOP ---
-    while (!glfwWindowShouldClose(window)) { // Input
+    while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
 
-        // Render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw the triangle
         glUseProgram(shaderProgram);
-        glBindVertexArray(VAO); // <--- We must bind the VAO before drawing!
-        glDrawArrays(GL_TRIANGLES, 0, 3); // Draw 3 vertices
-        // glBindVertexArray(0); // Optional unbind
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+        glBindVertexArray(0);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // Cleanup
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
