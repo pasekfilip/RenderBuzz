@@ -1,6 +1,7 @@
 #include "include/glad/gl.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "VertexBuffer.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -129,15 +130,15 @@ int main() {
         0, 2, 3
     };
 
-    unsigned int VBO, VAO, EBO;
+    VertexBuffer vertexBuffer;
+    
+    unsigned int VAO, EBO;
     glGenVertexArrays(1, &VAO); // generate vao
-    glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    vertexBuffer.initialize(vertices);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -165,7 +166,7 @@ int main() {
     }
 
     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    vertexBuffer.remove();
     glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 

@@ -3,7 +3,8 @@
 
 class VertexBuffer {
   public:
-    void initialize();
+    void initialize(float vertices[]);
+    void remove();
 };
 
 #endif // VERTEXBUFFER_H
