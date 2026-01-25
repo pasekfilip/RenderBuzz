@@ -3,12 +3,12 @@
 
 unsigned int VBO;
 
-void VertexBuffer::initialize(float vertices[]) {
+void VertexBuffer::initialize(std::span<float> vertices) {
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
 }
 
-void VertexBuffer::remove(){
+void VertexBuffer::remove() {
     glDeleteBuffers(1, &VBO);
 }

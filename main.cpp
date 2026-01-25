@@ -1,7 +1,7 @@
+#include "VertexBuffer.h"
 #include "include/glad/gl.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "VertexBuffer.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -119,10 +119,9 @@ int main() {
 
     // --- VERTEX DATA ---
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // bottom left
-        0.5f, -0.5f, 0.0f,  // bottom right
-        0.5f, 0.5f, 0.0f,   // top right
-        -0.5f, 0.5f, 0.0f   // top left
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        0.0f, -0.5f, 0.0f,   // bottom right
+        -0.25f, 0.5f, 0.0f, // top middle
     };
 
     unsigned int indices[] = {
@@ -130,18 +129,16 @@ int main() {
         0, 2, 3
     };
 
-    VertexBuffer vertexBuffer;
-    
-    unsigned int VAO, EBO;
+    // VertexArray vertexArray;
+    // vertexArray.initialize();
+    unsigned int VAO;
     glGenVertexArrays(1, &VAO); // generate vao
-    glGenBuffers(1, &EBO);
-
     glBindVertexArray(VAO);
 
+    VertexBuffer vertexBuffer;
     vertexBuffer.initialize(vertices);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    // ElementBuffer elementBuffer;
+    // elementBuffer.initialize(indices);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
@@ -158,7 +155,8 @@ int main() {
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
         glfwSwapBuffers(window);
@@ -167,7 +165,7 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     vertexBuffer.remove();
-    glDeleteBuffers(1, &EBO);
+    // elementBuffer.remove();
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

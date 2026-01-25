@@ -1,9 +1,10 @@
 #ifndef VERTEXBUFFER_H
 #define VERTEXBUFFER_H
+#include <span>
 
 class VertexBuffer {
   public:
-    void initialize(float vertices[]);
+    void initialize(std::span<float> vertices);
     void remove();
 };
 

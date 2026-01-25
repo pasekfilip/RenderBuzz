@@ -1,2 +1,2 @@
-g++ main.cpp VertexBuffer.cpp src/gl.c -I include/ -lglfw -ldl -o render_buzz; ./render_buzz
+g++ main.cpp VertexBuffer.cpp ElementBuffer.cpp VertexArray.cpp src/gl.c -I include/ -lglfw -ldl -std=c++20 -o render_buzz; ./render_buzz
 
