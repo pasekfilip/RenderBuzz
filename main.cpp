@@ -1,3 +1,5 @@
+#include "Shader.h"
+#include "ElementBuffer.h"
 #include "VertexBuffer.h"
 #include "include/glad/gl.h"
 #include <GLFW/glfw3.h>
@@ -47,9 +49,11 @@ void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum se
 }
 
 int main() {
+
     const char *vertexShaderSource = R"(
         #version 330 core
         layout (location = 0) in vec3 aPos;
+
         void main()
         {
             gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
@@ -58,10 +62,12 @@ int main() {
 
     const char *fragmentShaderSource = R"(
         #version 330 core
+
         out vec4 FragColor; 
+
         void main()
         {
-        FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+            FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
         }
     )";
 
@@ -119,9 +125,10 @@ int main() {
 
     // --- VERTEX DATA ---
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        0.0f, -0.5f, 0.0f,   // bottom right
-        -0.25f, 0.5f, 0.0f, // top middle
+        -0.5f, -0.5f, 0.0f, // bottom left
+        0.0f, -0.5f, 0.0f,  // bottom right
+        0.0f, 0.0f, 0.0f, // top middle
+        -0.5f, 0.0f, 0.0f, // top middle
     };
 
     unsigned int indices[] = {
@@ -137,14 +144,16 @@ int main() {
 
     VertexBuffer vertexBuffer;
     vertexBuffer.initialize(vertices);
-    // ElementBuffer elementBuffer;
-    // elementBuffer.initialize(indices);
+    ElementBuffer elementBuffer;
+    elementBuffer.initialize(indices);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    // Shader shader("./shaders/shader.vs","./shaders/shader.fs");
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -155,8 +164,8 @@ int main() {
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
         glfwSwapBuffers(window);
