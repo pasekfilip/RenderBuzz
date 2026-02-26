@@ -1,7 +1,8 @@
-#include "Shader.h"
 #include "ElementBuffer.h"
+#include "Shader.h"
 #include "VertexBuffer.h"
 #include "include/glad/gl.h"
+#include "include/stb_image.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -55,40 +56,62 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    Shader *shader = new Shader("./shaders/shader.vs","./shaders/shader.fs");
+    Shader *shader = new Shader("./shaders/shader.vert", "./shaders/shader.frag");
 
-    // --- VERTEX DATA ---
+    // clang-format off
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-        -0.25f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+        //vertex            //color             //texture
+        -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f
+        -0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f
     };
+
+    // clang-format on
 
     unsigned int indices[] = {
         0, 1, 2,
         0, 2, 3
     };
 
-    float textCords[] =  {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        0.5f, 1.0f,
-    };
+    int width, height, nrChannels;
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    unsigned char *data = stbi_load("./assets/wall.jpg", &width, &height, &nrChannels, 0);
+    if (!data) {
+        std::cout << "failed to load texture" << std::endl;
+        return -1;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
 
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
+
 
     VertexBuffer vertexBuffer;
     vertexBuffer.initialize(vertices);
     ElementBuffer elementBuffer;
     elementBuffer.initialize(indices);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -103,9 +126,9 @@ int main() {
 
         shader->use();
         shader->setFloat("position", number += 0.001);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
         glfwSwapBuffers(window);
@@ -114,7 +137,7 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     vertexBuffer.remove();
-    // elementBuffer.remove();
+    elementBuffer.remove();
     // glDeleteProgram(shaderProgram);
 
     glfwTerminate();
