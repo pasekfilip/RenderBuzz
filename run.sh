@@ -10,10 +10,9 @@ if [[ ! -f "build/gl.o" ]]; then
     g++ -c ./src/gl.c -I ./include/ -o build/gl.o
 fi
 
-g++ -c VertexBuffer.cpp -I include/ -std=c++20 -o build/VertexBuffer.o
-g++ -c ElementBuffer.cpp -I include/ -std=c++20 -o build/ElementBuffer.o
-g++ -c VertexArray.cpp -I include/ -std=c++20 -o build/VertexArray.o
+g++ -c Mesh.cpp -I include/ -std=c++20 -o build/Mesh.o
 g++ -c Shader.cpp -I include/ -std=c++20 -o build/Shader.o
+g++ -c Texture.cpp -I include/ -std=c++20 -o build/Texture.o
 
 echo "Compiling main.cpp..."
 g++ -c main.cpp -I ./include/ -std=c++20 -o ./build/main.o
@@ -24,8 +23,4 @@ g++ ./build/*.o -lglfw -ldl -o render_buzz
 echo "Done!"
 
 ./render_buzz
-
-
-
-
 

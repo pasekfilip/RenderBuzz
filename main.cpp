@@ -1,10 +1,18 @@
-#include "ElementBuffer.h"
+#include "Mesh.h"
 #include "Shader.h"
-#include "VertexBuffer.h"
-#include "include/glad/gl.h"
-#include "include/stb_image.h"
+#include "Texture.h"
+#include "Camera.h"
+#include "glad/gl.h"
+#include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
+#include <stb_image.h>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -23,6 +31,7 @@ void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum se
 }
 
 int main() {
+    // glm::vec4 vec()
     if (!glfwInit())
         return -1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -59,63 +68,28 @@ int main() {
     Shader *shader = new Shader("./shaders/shader.vert", "./shaders/shader.frag");
 
     // clang-format off
-    float vertices[] = {
-        //vertex            //color             //texture
-        -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-         0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f
-        -0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f
+
+    std::vector<Vertex> vertices = {
+        // Position            // Color             // TexCoords
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}
     };
 
     // clang-format on
 
-    unsigned int indices[] = {
-        0, 1, 2,
-        0, 2, 3
-    };
+    std::vector<unsigned int> indices = { 0, 1, 2, 0, 2, 3 };
 
-    int width, height, nrChannels;
+    Mesh mySquare (vertices, indices);
+    Texture wall ("./assets/wall.jpg");
 
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-    unsigned char *data = stbi_load("./assets/wall.jpg", &width, &height, &nrChannels, 0);
-    if (!data) {
-        std::cout << "failed to load texture" << std::endl;
-        return -1;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-
-    VertexBuffer vertexBuffer;
-    vertexBuffer.initialize(vertices);
-    ElementBuffer elementBuffer;
-    elementBuffer.initialize(indices);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
+    glm::mat4 model2 = glm::mat4(1.0f);
+    std::cout << "Starting matrix: " << glm::to_string(model2) << std::endl;
+    model2 = glm::translate(model2, glm::vec3(2.0f, 5.0f, 1.0f));
+    std::cout << "After translate matrix: " << glm::to_string(model2) << std::endl;
     float number = 0.01f;
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -124,21 +98,28 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        shader->use();
-        shader->setFloat("position", number += 0.001);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // 1. Prepare the Matrices
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        glBindVertexArray(0);
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 projection = camera.GetProjectionMatrix(800.0f, 600.0f);
+
+        // 2. Pass them to the shader
+        shader->use();
+        shader->setMat4("model", model);
+        shader->setMat4("view", view);
+        shader->setMat4("projection", projection);
+
+        // 3. Draw
+        wall.Bind(0);
+        mySquare.Draw();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    glDeleteVertexArrays(1, &VAO);
-    vertexBuffer.remove();
-    elementBuffer.remove();
-    // glDeleteProgram(shaderProgram);
+    wall.Unbind();
 
     glfwTerminate();
     return 0;

@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "glm/gtc/type_ptr.hpp"
 #include "include/glad/gl.h"
 #include <fstream>
 #include <iostream>
@@ -47,22 +48,30 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     glCompileShader(fragmentShader);
     checkShaderCompileErrors(fragmentShader, "FRAGMENT");
 
-    Id = glCreateProgram();
-    glAttachShader(Id, vertexShader);
-    glAttachShader(Id, fragmentShader);
-    glLinkProgram(Id);
-    checkShaderCompileErrors(Id, "PROGRAM");
+    ID = glCreateProgram();
+    glAttachShader(ID, vertexShader);
+    glAttachShader(ID, fragmentShader);
+    glLinkProgram(ID);
+    checkShaderCompileErrors(ID, "PROGRAM");
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 }
 
 void Shader::use() {
-    glUseProgram(Id);
+    glUseProgram(ID);
 }
 
 void Shader::setFloat(const std::string &name, float value) {
-    glUniform1f(glGetUniformLocation(Id, name.c_str()), value); 
+    glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+}
+
+void Shader::setInt(const std::string &name, int value) {
+    glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+}
+
+void Shader::setMat4(const std::string &name, glm::mat4 value) {
+    glad_glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::checkShaderCompileErrors(unsigned int shader, std::string type) {
